@@ -1,0 +1,8 @@
+ansible
+argcomplete
+cryptography
+ofxclient
+pymongo
+python-dateutil
+requests
+semver
