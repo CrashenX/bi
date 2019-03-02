@@ -20,6 +20,7 @@ from libi.crypto import Crypto
 from libi.printer import Printer
 from pymongo import MongoClient
 from semver import VersionInfo
+from sys import stdout
 
 
 class UnsupportedVersion(Exception):
@@ -96,7 +97,9 @@ class Porter():
     @classmethod
     def import_json(cls, path, dbname):
         data = None
+        crypto = Crypto(dbname)
         print("Importing %s .." % path, end='')
+        stdout.flush()
         try:
             f = open(path)
             with f:
@@ -106,7 +109,7 @@ class Porter():
                     if version <= VersionInfo.parse(v.version()):
                         data = v.correct(data)
                 data['version'] = cls.current.version()
-                data = cls.current.encrypt(data, Crypto(dbname))
+                data = cls.current.encrypt(data, crypto)
         except Exception as e:
             print(". %s; " % e, end='')
             Printer.color("nothing imported", False)
@@ -118,8 +121,10 @@ class Porter():
             for name in cls.current.tables():
                 table = getattr(db, name)
                 print("  ... deleting old %s .." % name, end='')
+                stdout.flush()
                 table.drop()
                 print(". importing new %s .." % name, end='')
+                stdout.flush()
                 records = data.get(name, [])
                 for r in records:
                     table.insert_one(r)
@@ -128,7 +133,9 @@ class Porter():
 
     @classmethod
     def export_json(cls, path, dbname):
+        crypto = Crypto(dbname)
         print("Exporting to %s .." % path, end='')
+        stdout.flush()
         data = {'version': cls.current.version()}
         try:
             client = MongoClient()
@@ -139,7 +146,7 @@ class Porter():
                     for row in getattr(db, table).find({}, {'_id': 0}):
                         data[table].append(row)
             f = open(path, 'w')
-            data = cls.current.decrypt(data, Crypto(dbname))
+            data = cls.current.decrypt(data, crypto)
             dump(data, f, sort_keys=True, indent=2, separators=(',', ': '),
                  default=default)
         except Exception as e:

@@ -19,6 +19,7 @@ from libi.parser import OFXParser
 from libi.printer import Printer
 from ofxclient import BankAccount, CreditCardAccount, Institution
 from pymongo import MongoClient
+from sys import stdout
 
 
 class OFXLoader():
@@ -62,6 +63,7 @@ class Collector():
             db = getattr(client, dbname)
             for account in db.accounts.find({}, {"_id": 0}):
                 print("Loading %s transactions .." % account["name"], end='')
+                stdout.flush()
                 institution = db.institutions.find_one(
                                {'name': account['institution']})
                 try:
