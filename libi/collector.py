@@ -19,6 +19,8 @@ from libi.parser import OFXParser
 from libi.printer import Printer
 from ofxclient import BankAccount, CreditCardAccount, Institution
 from pymongo import MongoClient
+from sys import stdout
+from time import sleep
 
 
 class OFXLoader():
@@ -62,16 +64,22 @@ class Collector():
             db = getattr(client, dbname)
             for account in db.accounts.find({}, {"_id": 0}):
                 print("Loading %s transactions .." % account["name"], end='')
-                institution = db.institutions.find_one(
-                               {'name': account['institution']})
-                try:
-                    cnt = cls._load_transactions(db, ofx, institution, account)
-                except Exception as e:
-                    print(". %s; " % e, end='')
-                    Printer.color("0 loaded", False)
-                else:
-                    print(". ", end='')
-                    Printer.color("%d loaded" % cnt, True)
+                stdout.flush()
+                nm = db.institutions.find_one({'name': account['institution']})
+                for i in range(1, 6):
+                    if i > 1:
+                        print("  🡒 Retrying (attempt %s of 5) .." % i, end='')
+                        stdout.flush()
+                        sleep(3)
+                    try:
+                        cnt = cls._load_transactions(db, ofx, nm, account)
+                    except Exception as e:
+                        print(". %s; " % e, end='')
+                        Printer.color("0 loaded", False)
+                    else:
+                        print(". ", end='')
+                        Printer.color("%d loaded" % cnt, True)
+                        break
 
     @staticmethod
     def _load_transactions(db, ofx, institution, account):
