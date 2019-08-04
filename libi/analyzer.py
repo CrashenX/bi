@@ -17,6 +17,7 @@
 from libi.matcher import RulesMatcher
 from datetime import datetime, timedelta
 from pymongo import MongoClient, ASCENDING
+from re import sub
 
 
 class Analyzer():
@@ -53,6 +54,11 @@ class Analyzer():
     @staticmethod
     def _format_trans(transaction, trans_fmt, nicks):
         desc = transaction.get("description")
+        if 'Check ' not in desc:
+            desc = sub(r'\d+', '', desc)
+        desc = sub(r'[^a-zA-Z0-9 .]', '', desc)
+        desc = sub(r'^  *', '', desc)
+        desc = sub(r'  *', ' ', desc)
         if len(transaction.get("buckets")) > 1:
             desc = "* " + desc
         desc = desc[0:28]
